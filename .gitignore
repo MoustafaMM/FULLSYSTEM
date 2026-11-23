@@ -1,0 +1,7 @@
+node_modules
+dist
+.env
+*.local
+service-account*.json
+emulator-data
+*-debug.log

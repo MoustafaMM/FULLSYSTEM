@@ -1,0 +1,140 @@
+rules_version = '2';
+
+// Express Tracker — role-based access
+// Roles: admin · counselor · admission · logistics_coordinator · logistics_team · qc
+// Pipeline: lead (0–79) → predicted (80) → visa_paid (100, adds Tracker entry) → registered (Admission) | lost (0)
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function userPath() { return /databases/$(database)/documents/users/$(request.auth.uid); }
+    function me() { return get(userPath()).data; }
+    function active() { return signedIn() && exists(userPath()) && me().active != false; }
+    function isRole(roles) { return active() && me().role in roles; }
+    function isAdmin() { return isRole(['admin']); }
+    function newD() { return request.resource.data; }
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+    function studentAfter(id) { return getAfter(/databases/$(database)/documents/students/$(id)).data; }
+
+    // ---------------- users: written only by the server (Admin SDK) ----------------
+    match /users/{uid} {
+      allow read: if active();
+      allow write: if false;
+    }
+
+    // ---------------- students ----------------
+    match /students/{id} {
+      function own() { return resource.data.counselorId == request.auth.uid; }
+      function consistent() { return (newD().stage == 'predicted') == (newD().confidence >= 80); }
+
+      // Counselors may only move a document to "submitted" (never approve/reject)
+      function docChanged(k) { return k in newD().documents.diff(resource.data.documents).affectedKeys(); }
+      function docOk(k) { return !docChanged(k) || newD().documents[k].status == 'submitted'; }
+      function documentsOk() {
+        return !('documents' in changed()) || (
+          docOk('passport') && docOk('photo') && docOk('offer_letter') &&
+          docOk('certificates') && docOk('transcripts') && docOk('english_test') &&
+          newD().documents.keys().hasOnly(['passport', 'photo', 'offer_letter', 'certificates', 'transcripts', 'english_test'])
+        );
+      }
+
+      function counselorUpdate() {
+        return isRole(['counselor']) && own()
+          && newD().counselorId == resource.data.counselorId
+          && !('registeredAt' in changed())
+          && documentsOk()
+          && (
+            // manual confidence in open stages (also reopening a lost lead), capped at 80
+            (newD().stage in ['lead', 'predicted'] && resource.data.stage in ['lead', 'predicted', 'lost']
+              && newD().confidence is int && newD().confidence >= 0 && newD().confidence <= 80 && consistent())
+            // Predicted (80) → Visa Paid (100) with a receipt reference
+            || (resource.data.stage == 'predicted' && newD().stage == 'visa_paid' && newD().confidence == 100
+              && newD().visaReceiptRef is string && newD().visaReceiptRef.size() > 0)
+            // open → lost
+            || (resource.data.stage in ['lead', 'predicted'] && newD().stage == 'lost' && newD().confidence == 0)
+            // details / documents / next follow-up only
+            || !changed().hasAny(['stage', 'confidence', 'visaReceiptRef', 'visaPaidAt'])
+          );
+      }
+
+      function admissionUpdate() {
+        return isRole(['admission'])
+          && changed().hasOnly(['documents', 'stage', 'registeredAt', 'updatedAt'])
+          && (newD().stage == resource.data.stage
+              || (resource.data.stage == 'visa_paid' && newD().stage == 'registered'));
+      }
+
+      allow read: if isRole(['admin', 'admission', 'qc', 'logistics_coordinator', 'logistics_team'])
+                  || (isRole(['counselor']) && own());
+      allow create: if isAdmin()
+        || (isRole(['counselor'])
+            && newD().counselorId == request.auth.uid
+            && newD().stage in ['lead', 'predicted']
+            && newD().confidence is int && newD().confidence >= 0 && newD().confidence <= 80
+            && consistent());
+      allow update: if isAdmin() || counselorUpdate() || admissionUpdate();
+      allow delete: if isAdmin();
+    }
+
+    // ---------------- visa tracker ----------------
+    match /trackerApps/{id} {
+      allow read: if isRole(['admin', 'admission', 'qc', 'logistics_coordinator'])
+                  || (isRole(['counselor']) && resource.data.counselorId == request.auth.uid);
+      // created in the same batch that marks the student Visa Paid
+      allow create: if isAdmin()
+        || (isRole(['counselor'])
+            && newD().counselorId == request.auth.uid
+            && studentAfter(id).stage == 'visa_paid'
+            && studentAfter(id).counselorId == request.auth.uid);
+      allow update: if isAdmin()
+        || (isRole(['admission']) && changed().hasOnly(['admissionReview', 'admissionNote', 'applicationNo']));
+      allow delete: if isAdmin();
+    }
+
+    // ---------------- follow-ups ----------------
+    match /followups/{id} {
+      allow read: if isRole(['admin', 'qc']) || (active() && resource.data.ownerId == request.auth.uid);
+      allow create: if active() && newD().ownerId == request.auth.uid;
+      allow update: if isAdmin()
+        || (active() && resource.data.ownerId == request.auth.uid && newD().ownerId == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
+    // ---------------- logistics ----------------
+    match /logistics/{id} {
+      allow read: if isRole(['admin', 'logistics_coordinator', 'qc', 'admission'])
+                  || (isRole(['logistics_team']) && resource.data.assigneeId == request.auth.uid)
+                  || (isRole(['counselor']) && resource.data.counselorId == request.auth.uid);
+      allow create: if isRole(['admin', 'logistics_coordinator'])
+        || (isRole(['counselor'])
+            && newD().counselorId == request.auth.uid
+            && newD().status == 'todo'
+            && studentAfter(newD().studentId).stage == 'visa_paid');
+      allow update: if isRole(['admin', 'logistics_coordinator'])
+        || (isRole(['logistics_team']) && resource.data.assigneeId == request.auth.uid
+            && changed().hasOnly(['status', 'notes', 'subTasks']));
+      allow delete: if isRole(['admin', 'logistics_coordinator']);
+    }
+
+    // ---------------- quality control ----------------
+    match /qcFlags/{id} {
+      allow read: if active();
+      allow create, update: if isRole(['admin', 'qc']);
+      allow delete: if isAdmin();
+    }
+
+    // ---------------- audit log: append-only ----------------
+    match /auditLog/{id} {
+      allow read: if isRole(['admin', 'qc']);
+      allow create: if active() && newD().by == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ---------------- chatbot knowledge base ----------------
+    match /kb/{id} {
+      allow read: if active();
+      allow write: if isAdmin();
+    }
+  }
+}

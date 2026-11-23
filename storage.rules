@@ -1,0 +1,16 @@
+rules_version = '2';
+
+// Photo proofs, receipts and vehicle logs from the Logistics module. Staff only (Firebase Auth claims).
+service firebase.storage {
+  match /b/{bucket}/o {
+    function staff() {
+      return request.auth != null && request.auth.token.active != false
+        && request.auth.token.role in ['admin', 'counselor', 'admission', 'logistics_coordinator', 'logistics_team', 'qc'];
+    }
+    match /{allPaths=**} {
+      allow read: if staff();
+      allow write: if staff() && request.resource.size < 20 * 1024 * 1024;
+      allow delete: if staff();
+    }
+  }
+}

@@ -1,0 +1,32 @@
+/* =====================================================================
+   BRAND — Pioneer palette, sampled from the Pioneer logo
+   (navy #293b8f, red #dd2826). Logo: public/logo.png, favicon: public/favicon.png.
+   Everything in the app reads from these variables.
+   ===================================================================== */
+:root {
+  --brand-primary: #293b8f;      /* Pioneer navy (logo) — sidebar, primary buttons */
+  --brand-primary-dark: #1d2a6b; /* hover / active */
+  --brand-accent: #dd2826;       /* Pioneer red (logo) — active nav marker, highlights */
+  --brand-on-primary: #ffffff;   /* text on primary */
+
+  /* Pipeline stage colours */
+  --stage-lead: #94a3b8;
+  --stage-predicted: #f59e0b;
+  --stage-visa: #2563eb;
+  --stage-registered: #16a34a;
+  --stage-lost: #dc2626;
+
+  /* Neutrals */
+  --bg: #f4f6fa;
+  --surface: #ffffff;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --muted: #64748b;
+  --ok: #16a34a;
+  --warn: #d97706;
+  --bad: #dc2626;
+  --info: #2563eb;
+
+  --radius: 10px;
+  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+}

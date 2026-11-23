@@ -1,0 +1,135 @@
+rules_version = '2';
+
+// Logistics database ("logistics") — the Pioneer Logistics module inside Express Tracker.
+// Identity = Firebase Auth. Role comes from the custom claims set by the Express Tracker server
+// (request.auth.token.role / .active), so this database needs no lookups into the other one.
+//
+// Logistics screens keep live listeners on whole collections and filter in the app, so READ is
+// open to every active staff member; WRITES are limited by role.
+// The public student feedback form (no sign-in) can read its own task, the task's student and
+// preset, and submit one rating.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function etRole() { return request.auth.token.role; }
+    function staff() {
+      return signedIn() && etRole() in ['admin', 'counselor', 'admission', 'logistics_coordinator', 'logistics_team', 'qc']
+        && request.auth.token.active != false;
+    }
+    function is(roles) { return staff() && etRole() in roles; }
+    function ops() { return is(['admin', 'logistics_coordinator']); }          // admin + coordinator
+    function field() { return is(['logistics_team']); }                         // field officers
+    function qc() { return is(['admin', 'qc']); }
+    // Logistics role that matches the claim (see server/firebaseAdmin.ts LOGI_ROLE)
+    function logiRole() {
+      return etRole() == 'admin' ? 'admin'
+        : etRole() == 'logistics_coordinator' ? 'coordinator'
+        : etRole() == 'logistics_team' ? 'field_officer'
+        : etRole() == 'counselor' ? 'counselor'
+        : 'counselor_manager';
+    }
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+
+    // ---- staff profiles (wallet balance, location, push tokens live here) ----
+    match /users/{uid} {
+      allow read: if staff();
+      allow create: if staff() && uid == request.auth.uid
+        && request.resource.data.role == logiRole() && request.resource.data.get('walletBalance', 0) == 0;
+      allow update: if ops()
+        || (staff() && uid == request.auth.uid
+            && request.resource.data.role == logiRole()
+            && request.resource.data.get('etRole', etRole()) == etRole())
+        // field officers' wallet balance changes when they log expenses
+        || (field() && uid == request.auth.uid);
+      allow delete: if is(['admin']);
+    }
+
+    // ---- arrivals directory (copied in by the server on Visa Paid) ----
+    match /students/{id} {
+      allow get: if staff() || !signedIn();            // feedback form shows the student's name
+      allow list: if staff();
+      allow create: if ops() || is(['counselor']);
+      allow update: if ops() || field()
+        || (is(['counselor']) && resource.data.counselorId == request.auth.uid);
+      allow delete: if is(['admin']);
+    }
+
+    // ---- logistics tasks ----
+    match /tasks/{id} {
+      allow get: if staff() || !signedIn();            // public feedback link
+      allow list: if staff();
+      allow create: if ops();
+      allow update: if staff()
+        || (!signedIn() && changed().hasOnly(['feedbackSubmitted', 'feedback'])
+            && resource.data.get('feedbackSubmitted', false) != true);
+      allow delete: if is(['admin']);
+    }
+
+    match /presets/{id} {
+      allow get: if staff() || !signedIn();
+      allow list: if staff();
+      allow write: if ops();
+    }
+
+    match /feedback/{id} {
+      allow read: if staff();
+      allow create: if request.resource.data.rating >= 1 && request.resource.data.rating <= 5;
+      allow update, delete: if ops();
+    }
+
+    match /taskRequests/{id} {
+      allow read: if staff();
+      allow create: if ops() || is(['counselor']);
+      allow update, delete: if ops() || (is(['counselor']) && resource.data.counselorId == request.auth.uid);
+    }
+
+    match /counselorTasks/{id} {
+      allow read: if staff();
+      allow write: if is(['admin', 'counselor', 'admission', 'qc']);
+    }
+
+    match /vehicles/{id} {
+      allow read: if staff();
+      allow create, delete: if ops();
+      allow update: if ops() || field();               // odometer / status on check-in-out
+    }
+    match /vehicleLogs/{id} {
+      allow read: if staff();
+      allow write: if ops() || field();
+    }
+
+    match /expenses/{id} {
+      allow read: if staff();
+      allow create: if ops() || field();
+      allow update, delete: if ops();
+    }
+    match /topups/{id} {
+      allow read: if staff();
+      allow create, update, delete: if ops();
+    }
+    match /overtimeLogs/{id} {
+      allow read: if staff();
+      allow create: if ops() || field();
+      allow update, delete: if ops();
+    }
+
+    match /notifications/{id} {
+      allow read: if staff();
+      allow create: if staff();
+      allow update, delete: if staff();                // mark read / clear own list
+    }
+
+    // outbound mail queue → Cloud Function processOutboundMail
+    match /mail/{id} {
+      allow create: if staff();
+      allow read, update, delete: if false;
+    }
+
+    // quality control (Logistics QC tab: admin + QC)
+    match /qcReviews/{id} { allow read: if staff(); allow write: if qc(); }
+    match /qcDailyReports/{id} { allow read: if staff(); allow write: if qc(); }
+    match /qcOfficerEvaluations/{id} { allow read: if staff(); allow write: if qc(); }
+  }
+}

@@ -1,0 +1,383 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer utilities {
+  .font-arabic {
+    font-family: 'Cairo', 'Tajawal', system-ui, sans-serif;
+  }
+}
+
+/* ==========================================================================
+   PIONEER LOGISTICS DARK MODE DESIGN SYSTEM & COLOR PALETTE
+   ========================================================================== */
+
+:root {
+  --color-canvas: #f1f5f9;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #ffffff;
+  --color-border: #e2e8f0;
+  --color-border-subtle: #f1f5f9;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #64748b;
+  --color-accent-brand: #dc2626;
+}
+
+html.dark {
+  color-scheme: dark;
+  --color-canvas: #090d16;
+  --color-surface: #111827;
+  --color-surface-elevated: #1a233a;
+  --color-border: #1e293b;
+  --color-border-subtle: #151e33;
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #64748b;
+  --color-accent-brand: #ef4444;
+}
+
+/* Base Body Adaptation */
+html.dark body {
+  background-color: #090d16;
+  color: #f8fafc;
+}
+
+/* Automatic Cascade Theme Adapters for Core Layout & Views */
+.dark .bg-slate-100 {
+  background-color: #0b101d !important;
+}
+
+.dark .bg-slate-50 {
+  background-color: #0e1524 !important;
+}
+
+.dark .bg-white:not([data-keep-light]):not(.keep-white) {
+  background-color: #111827 !important;
+}
+
+/* Opacity-variant background matching in Dark Mode */
+.dark [class*="bg-slate-50/"],
+.dark [class*="from-slate-50/"] {
+  background-color: #0f172a !important;
+  background-image: none !important;
+}
+
+.dark [class*="to-white"] {
+  --tw-gradient-to: #111827 !important;
+}
+
+.dark [class*="bg-slate-100/"] {
+  background-color: #0c1220 !important;
+}
+
+.dark [class*="bg-slate-200/"] {
+  background-color: #1e293b !important;
+}
+
+/* Subtle tinted card layers in dark mode */
+.dark [class*="bg-purple-50"] {
+  background-color: rgba(88, 28, 135, 0.22) !important;
+}
+.dark [class*="text-purple-900"],
+.dark [class*="text-purple-950"] {
+  color: #d8b4fe !important;
+}
+.dark [class*="bg-purple-100"] {
+  background-color: rgba(126, 34, 206, 0.3) !important;
+}
+.dark [class*="text-purple-800"] {
+  color: #e9d5ff !important;
+}
+
+.dark [class*="bg-amber-50"] {
+  background-color: rgba(120, 53, 15, 0.25) !important;
+}
+.dark [class*="text-amber-950"],
+.dark [class*="text-amber-900"],
+.dark [class*="text-amber-800"] {
+  color: #fde68a !important;
+}
+.dark [class*="bg-amber-100"] {
+  background-color: rgba(180, 83, 9, 0.3) !important;
+}
+
+.dark [class*="bg-emerald-50"] {
+  background-color: rgba(6, 78, 59, 0.25) !important;
+}
+.dark [class*="text-emerald-950"],
+.dark [class*="text-emerald-900"],
+.dark [class*="text-emerald-800"],
+.dark [class*="text-emerald-700"] {
+  color: #6ee7b7 !important;
+}
+.dark [class*="bg-emerald-100"] {
+  background-color: rgba(4, 120, 87, 0.3) !important;
+}
+
+.dark [class*="bg-red-50"] {
+  background-color: rgba(127, 29, 29, 0.25) !important;
+}
+.dark [class*="text-red-950"],
+.dark [class*="text-red-900"],
+.dark [class*="text-red-800"],
+.dark [class*="text-red-700"] {
+  color: #fca5a5 !important;
+}
+.dark [class*="bg-red-100"] {
+  background-color: rgba(185, 28, 28, 0.3) !important;
+}
+
+.dark [class*="bg-blue-50"] {
+  background-color: rgba(30, 58, 138, 0.25) !important;
+}
+.dark [class*="text-blue-950"],
+.dark [class*="text-blue-900"],
+.dark [class*="text-blue-800"] {
+  color: #93c5fd !important;
+}
+.dark [class*="bg-blue-100"] {
+  background-color: rgba(29, 78, 216, 0.3) !important;
+}
+
+.dark [class*="bg-sky-50"] {
+  background-color: rgba(12, 74, 110, 0.25) !important;
+}
+.dark [class*="text-sky-950"],
+.dark [class*="text-sky-900"],
+.dark [class*="text-sky-800"] {
+  color: #7dd3fc !important;
+}
+.dark [class*="bg-sky-100"] {
+  background-color: rgba(3, 105, 161, 0.3) !important;
+}
+
+/* Border adaptations with or without opacity */
+.dark [class*="border-slate-100"],
+.dark [class*="border-slate-200"] {
+  border-color: #1e293b !important;
+}
+
+.dark [class*="border-slate-300"] {
+  border-color: #334155 !important;
+}
+
+.dark [class*="border-purple-"] {
+  border-color: rgba(147, 51, 234, 0.3) !important;
+}
+
+.dark [class*="border-amber-"] {
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+.dark [class*="border-emerald-"] {
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+.dark [class*="border-red-"] {
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+.dark [class*="border-blue-"],
+.dark [class*="border-sky-"] {
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+.dark .text-slate-900,
+.dark .text-slate-800 {
+  color: #f8fafc !important;
+}
+
+.dark .text-slate-700 {
+  color: #cbd5e1 !important;
+}
+
+.dark .text-slate-600 {
+  color: #94a3b8 !important;
+}
+
+.dark .text-slate-500 {
+  color: #64748b !important;
+}
+
+/* Dynamic Interactive States in Dark Mode */
+.dark .hover\:bg-slate-50:hover {
+  background-color: #162032 !important;
+}
+
+.dark .hover\:bg-slate-100:hover {
+  background-color: #1a2438 !important;
+}
+
+.dark .hover\:bg-slate-200:hover {
+  background-color: #243048 !important;
+}
+
+.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #1e293b !important;
+}
+
+/* Dark Mode Inputs, Dropdowns, and Textareas */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([data-keep-light]),
+.dark select:not([data-keep-light]),
+.dark textarea:not([data-keep-light]) {
+  background-color: #0c1220 !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #64748b !important;
+}
+
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus {
+  border-color: #ef4444 !important;
+  outline: none;
+}
+
+/* Dark Shadow Softening */
+.dark .shadow-sm,
+.dark .shadow-md,
+.dark .shadow-lg,
+.dark .shadow-xl,
+.dark .shadow-2xl {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Custom Sleek Dark Scrollbars */
+html.dark ::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: #090d16;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 9999px;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Leaflet Dark Mode Inversion & Map Tuning */
+.dark .leaflet-tile {
+  filter: brightness(0.65) invert(1) contrast(3) hue-rotate(200deg) saturate(0.35);
+}
+
+.dark .leaflet-container {
+  background: #090d16 !important;
+}
+
+.dark .leaflet-popup-content-wrapper,
+.dark .leaflet-popup-tip {
+  background-color: #111827 !important;
+  color: #f8fafc !important;
+  border: 1px solid #1e293b;
+}
+
+.dark .leaflet-popup-content {
+  color: #f8fafc !important;
+}
+
+/* Leaflet Stacking Context & Default Overrides */
+/* Restrict leaflet-container to a local stacking context at z-index 0 below navigation */
+.leaflet-container {
+  position: relative;
+  z-index: 0 !important;
+}
+
+/* Strictly cap Leaflet controls (zoom, attribution) below sidebar elevation (z-50) and overlay (z-40) */
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 30 !important;
+}
+
+/* Ensure controls retain proper layering */
+.leaflet-control {
+  z-index: 25 !important;
+}
+
+/* Cap base map pane below controls so zoom buttons remain clickable */
+.leaflet-pane {
+  z-index: 10 !important;
+}
+
+/* Maintain internal sub-pane stacking hierarchy: popups > markers > tiles */
+.leaflet-tile-pane {
+  z-index: 11 !important;
+}
+
+.leaflet-overlay-pane {
+  z-index: 12 !important;
+}
+
+.leaflet-shadow-pane {
+  z-index: 13 !important;
+}
+
+.leaflet-marker-pane {
+  z-index: 14 !important;
+}
+
+.leaflet-tooltip-pane {
+  z-index: 15 !important;
+}
+
+.leaflet-popup-pane {
+  z-index: 16 !important;
+}
+
+/* ==========================================================================
+   MOBILE RESPONSIVENESS, TOUCH ERGONOMICS & SAFE-AREA INSETS
+   ========================================================================== */
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent iOS Safari auto-zoom on input focus */
+@media screen and (max-width: 640px) {
+  input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  input[type="password"],
+  input[type="email"],
+  input[type="search"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Safe area padding utilities for notched mobile screens */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Touch momentum scrolling */
+.touch-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Smooth hidden scrollbar for swipeable horizontal tabs */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+
